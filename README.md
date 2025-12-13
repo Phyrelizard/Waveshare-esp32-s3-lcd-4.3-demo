@@ -1,60 +1,306 @@
-# Waveshare ESP32-S3-Touch-LCD-4.3 with Squareline Studio and PlatformIO
+# Waveshare ESP32-S3-Touch-LCD-4.3 Smart Display
 
-This is a first test with getting a Waveshare ESP32-S3-LCD-4.3 Touch running with an exported template project from SquareLine Studio.
+A fully-featured smart display for the Waveshare ESP32-S3-Touch-LCD-4.3, featuring WiFi connectivity, real-time clock, weather forecasting, and intelligent backlight management.
 
-It is a very simple two-screen UI with buttons going back and forth.
+![Smart Display](https://img.shields.io/badge/ESP32--S3-Smart%20Display-blue)
+![LVGL](https://img.shields.io/badge/LVGL-v8.3.8-green)
+![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange)
 
-## Get Started
+## ✨ Features
 
-1. Open the project in PlatformIO
-2. Connect your board to USB
-3. Make sure to press and hold the Boot button on your board, then press the Reset button, and release the Boot button
-4. Click Upload
-5. Enjoy clicking back and forth on your touch panel :)
+### 🌐 WiFi Connectivity
+- Automatic connection on startup with configurable credentials
+- WiFi status indicator showing signal strength (RSSI)
+- Automatic reconnection on connection loss
+- Real-time connection monitoring
 
-## Libraries
+### ⏰ Network Time Synchronization (NTP)
+- Automatic time sync via NTP protocol
+- **Default timezone: Pacific Standard Time (PST) with automatic DST**
+- User-configurable timezone support for worldwide use
+- Live clock display with current time (12/24 hour format)
+- Date display with day of week
+- Automatic daylight saving time handling
 
-The libraries are the ones provided on the [Waveshare Wiki](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-4.3): [S3-4.3-libraries.zip](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-4.3/S3-4.3-libraries.zip), except for lvgl, which is added as library dependency in `platformio.ini`.
+### 🌤️ Weather Application
+- **Current weather conditions:**
+  - Current temperature with large, readable display
+  - Today's high and low temperatures
+  - Weather description (Clear, Cloudy, Rain, Snow, etc.)
+  - Humidity and wind speed
+- **7-day weather forecast:**
+  - Daily high/low temperatures for the week ahead
+  - Weather condition codes for each day
+  - Precipitation probability
+  - Compact forecast display at bottom of screen
+- Powered by **Open-Meteo API** (no API key required!)
+- Updates automatically every 30 minutes
+- Location configurable via latitude/longitude
 
-I tried to add the other two libraries as dependencies as well, but Waveshare made some changes:
+### 💡 Programmable Backlight Control
+- **Scheduled automatic control:**
+  - Configurable "time on" hour (default: 7:00 AM)
+  - Configurable "time off" hour (default: 10:00 PM)
+  - Settings persist across reboots
+- **Touch-to-wake feature:**
+  - Touch screen to wake display when backlight is off
+  - Auto-dim after 30 seconds of inactivity
+  - Works even when display is sleeping
 
-- ESP32_IO_Expander: The CH422G chip was added. There are [forks](https://github.com/esp-arduino-libs/ESP32_IO_Expander/network) from the original ESP32 repo including the new files, but nothing official yet.
-- ESP32_Display_Panel: There are also some changes in the repo, that I did not yet investigate.
+### 🎨 Professional User Interface
+- Clean, modern LVGL-based UI design
+- Large, readable fonts for time and temperature
+- Status bar showing WiFi signal strength
+- Real-time updates without blocking
+- Smooth animations and transitions
+- Professional color scheme with good contrast
 
-## SquareLine Studio
+## 📋 Requirements
 
-The setting that worked the best for me in SquareLine Studio was Arduino with TFT_eSPI. I used Export > Create Template Project, but only copied the `lib/ui` folder into this project.
+### Hardware
+- Waveshare ESP32-S3-Touch-LCD-4.3 development board
+- WiFi network (2.4GHz)
+- USB cable for programming and power
 
-## PlatformIO
+### Software
+- [PlatformIO](https://platformio.org/) IDE or CLI
+- Libraries (automatically installed via platformio.ini):
+  - LVGL 8.3.8
+  - ArduinoJson 7.0.0
+  - NTPClient 3.2.1
+  - ESP32_Display_Panel (included in lib/)
+  - ESP32_IO_Expander (included in lib/)
 
-Check the profile in platformio.ini:
+## 🚀 Quick Start
+
+### 1. Clone and Open Project
+```bash
+git clone https://github.com/Phyrelizard/Waveshare-esp32-s3-lcd-4.3-demo.git
+cd Waveshare-esp32-s3-lcd-4.3-demo
+```
+
+### 2. Configure Your Settings
+
+Edit `include/config.h` with your information:
+
+```cpp
+// WiFi credentials
+#define WIFI_SSID "YourWiFiSSID"
+#define WIFI_PASSWORD "YourWiFiPassword"
+
+// Your location (for weather)
+#define DEFAULT_LATITUDE "37.7749"    // San Francisco example
+#define DEFAULT_LONGITUDE "-122.4194"
+
+// Backlight schedule (24-hour format)
+#define DEFAULT_BACKLIGHT_ON_HOUR 7   // 7:00 AM
+#define DEFAULT_BACKLIGHT_OFF_HOUR 22 // 10:00 PM
+
+// Temperature units
+#define TEMP_UNIT_FAHRENHEIT true  // false for Celsius
+```
+
+**📍 Find your coordinates:** https://www.latlong.net/
+
+### 3. Build and Upload
+
+```bash
+# Using PlatformIO CLI
+pio run --target upload
+
+# Or use PlatformIO IDE
+# Open project, click "Upload" button
+```
+
+### 4. Upload to Board
+
+1. Connect your board via USB
+2. Press and hold the **Boot** button
+3. Press the **Reset** button
+4. Release the **Boot** button
+5. Click Upload in PlatformIO
+
+### 5. Monitor Serial Output (Optional)
+
+```bash
+pio device monitor
+# Baud rate: 115200
+```
+
+## 📖 Configuration
+
+See **[CONFIGURATION.md](CONFIGURATION.md)** for detailed setup instructions including:
+- WiFi configuration
+- Timezone settings for all regions
+- Weather location setup
+- Backlight schedule customization
+- Temperature units (°F/°C)
+- Time format (12/24 hour)
+- Troubleshooting guide
+
+## 🏗️ Project Structure
 
 ```
-[env:esp32s3box]
-platform = espressif32
-board = esp32s3box
-framework = arduino
-monitor_speed = 115200
-board_upload.flash_size = 8MB
-build_flags = 
-	-D BOARD_HAS_PSRAM
-	-D LV_CONF_INCLUDE_SIMPLE
-	-I lib
-board_build.arduino.memory_type = qio_opi
-board_build.f_flash = 80000000L
-board_build.flash_mode = qio
+.
+├── src/
+│   ├── main.cpp                 # Main application logic
+│   ├── wifi_manager.cpp         # WiFi connection handling
+│   ├── time_manager.cpp         # NTP time synchronization
+│   ├── weather_api.cpp          # Weather data fetching
+│   ├── backlight_controller.cpp # Backlight scheduling
+│   └── ui_manager.cpp           # UI display updates
+├── include/
+│   ├── config.h                 # Main configuration file ⚙️
+│   ├── wifi_manager.h
+│   ├── time_manager.h
+│   ├── weather_api.h
+│   ├── backlight_controller.h
+│   └── ui_manager.h
+├── lib/
+│   ├── ESP32_Display_Panel/     # Display driver
+│   ├── ESP32_IO_Expander/       # IO expander for backlight
+│   └── ui/                      # LVGL UI components (legacy)
+├── platformio.ini               # PlatformIO configuration
+├── CONFIGURATION.md             # Detailed setup guide
+└── README.md                    # This file
+```
+
+## 🌍 Timezone Support
+
+The display supports all major timezones with automatic DST:
+
+- **US:** Pacific, Mountain, Central, Eastern
+- **Europe:** GMT, CET, EET, WET
+- **Asia:** JST, CST, IST, SGT
+- **Australia:** AEST, ACST, AWST
+- **And many more!**
+
+See [CONFIGURATION.md](CONFIGURATION.md) for timezone configuration examples.
+
+## 🌐 Weather API
+
+This project uses the **Open-Meteo API**:
+- ✅ **Free** and open-source
+- ✅ **No API key required**
+- ✅ **No registration** needed
+- ✅ Professional weather data
+- ✅ 7-day forecasts
+- ✅ Worldwide coverage
+
+Learn more: https://open-meteo.com/
+
+## 🛠️ Technical Details
+
+### Libraries & Dependencies
+```ini
 lib_deps = 
-	lvgl/lvgl@8.3.8
+    lvgl/lvgl@8.3.8
+    bblanchon/ArduinoJson@^7.0.0
+    arduino-libraries/NTPClient@^3.2.1
 ```
 
-These are the equivalents for settings the [Waveshare Wiki](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-4.3) recommends for the Arduino IDE.
+### Display Specifications
+- **Resolution:** 800x480 pixels
+- **Display:** 4.3" TFT LCD with RGB interface
+- **Touch:** Capacitive touch via GT911
+- **Backlight:** Controllable via TCA9554 IO Expander (Pin 2)
 
-## Source
+### Memory Usage
+- **PSRAM:** Enabled for larger LVGL buffers
+- **Flash:** 8MB
+- **RAM:** Optimized for smooth UI performance
 
-The `src/main.cpp` is basically a combination of the `ESP32-S3-Touch-LCD-4.3_Code/Arduino/lvgl_Porting` example from the Waveshare wiki, with removed demo and `#include <ui.h>` from the exported SquareLine Studio project.
+## 🐛 Troubleshooting
 
-## Caveats
+### Common Issues
 
-There are some yellow artifacts when doing animations. Also, I have not yet figured out how to rotate the screen.
+**WiFi won't connect:**
+- Verify SSID and password in `config.h`
+- Ensure 2.4GHz network (ESP32 doesn't support 5GHz)
+- Check serial monitor for error messages
 
-Feedback welcome!
+**Time shows "---":**
+- WiFi must be connected first
+- Wait 5-10 seconds for NTP sync
+- Check timezone settings
+
+**Weather shows "---":**
+- WiFi must be connected
+- Verify latitude/longitude are correct
+- Wait up to 30 seconds for first update
+- Check serial monitor for HTTP errors
+
+**Backlight not working:**
+- Check schedule settings match current time
+- Try touching screen to wake
+- Verify time is synchronized
+
+See [CONFIGURATION.md](CONFIGURATION.md) for more troubleshooting tips.
+
+## 📊 Serial Monitor Output
+
+Connect at 115200 baud to see detailed logging:
+- WiFi connection status and signal strength
+- NTP time synchronization events
+- Weather API requests and responses
+- Backlight schedule events
+- Touch interactions
+- Error messages and debugging info
+
+## 🔄 Updates & Maintenance
+
+### Weather Data
+- Updates automatically every 30 minutes
+- Manual update on WiFi reconnection
+- Configurable update interval
+
+### Time Synchronization
+- Initial sync on WiFi connection
+- Automatic resync every hour
+- Timezone and DST handled automatically
+
+### Settings Persistence
+- Backlight schedule saved to NVS (non-volatile storage)
+- Survives power cycles and firmware updates
+- Factory defaults available
+
+## 🎯 Future Enhancements
+
+Potential features for future versions:
+- Settings UI screen for on-device configuration
+- Multiple screen layouts (swipe to switch)
+- Additional weather data (pressure, UV index)
+- WiFi Manager captive portal for easy setup
+- Multiple location support
+- Weather alerts and notifications
+- Customizable color themes
+
+## 📄 License
+
+This project builds upon the original Waveshare ESP32-S3-Touch-LCD-4.3 demo.
+
+Original demo components retain their original licenses. New smart display features are provided as-is for educational and personal use.
+
+## 🙏 Acknowledgments
+
+- **Waveshare** for the ESP32-S3-Touch-LCD-4.3 hardware and base libraries
+- **LVGL** for the excellent embedded graphics library
+- **Open-Meteo** for free weather data API
+- **ESP-Arduino-Libs** for display panel libraries
+- Original demo project contributors
+
+## 📞 Support
+
+For issues and questions:
+1. Check [CONFIGURATION.md](CONFIGURATION.md) first
+2. Review serial monitor output
+3. Verify all settings in `config.h`
+4. Check GitHub Issues
+
+## 🌟 Original Demo
+
+This project is based on the original Waveshare demo. The original simple two-screen button demo UI files are preserved in `lib/ui/` but are no longer used. The display now shows a functional smart display interface.
+
+---
+
+**Made with ☕ for the Waveshare ESP32-S3-Touch-LCD-4.3 community**

@@ -21,12 +21,12 @@ void UIManager::begin(lv_obj_t* parent) {
 void UIManager::createMainUI(lv_obj_t* parent) {
     // Create main screen
     _mainScreen = lv_obj_create(parent);
-    lv_obj_set_size(_mainScreen, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_size(_mainScreen, ESP_PANEL_LCD_H_RES, ESP_PANEL_LCD_V_RES);
     lv_obj_clear_flag(_mainScreen, LV_OBJ_FLAG_SCROLLABLE);
     
     // Status bar at top
     _statusBar = lv_obj_create(_mainScreen);
-    lv_obj_set_size(_statusBar, LV_HOR_RES, 30);
+    lv_obj_set_size(_statusBar, ESP_PANEL_LCD_H_RES, 30);
     lv_obj_set_pos(_statusBar, 0, 0);
     lv_obj_set_style_bg_color(_statusBar, lv_color_hex(0x333333), 0);
     lv_obj_clear_flag(_statusBar, LV_OBJ_FLAG_SCROLLABLE);
@@ -63,8 +63,8 @@ void UIManager::createMainUI(lv_obj_t* parent) {
     lv_obj_align(_weatherLabel, LV_ALIGN_CENTER, 0, 60);
     
     // Create 7-day forecast at bottom
-    int forecastY = LV_VER_RES - 80;
-    int forecastSpacing = LV_HOR_RES / 7;
+    int forecastY = ESP_PANEL_LCD_V_RES - 80;
+    int forecastSpacing = ESP_PANEL_LCD_H_RES / 7;
     
     for (int i = 0; i < 7; i++) {
         _forecastLabels[i] = lv_label_create(_mainScreen);

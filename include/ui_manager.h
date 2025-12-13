@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <lvgl.h>
+#include <ESP_Panel_Library.h>
 #include "time_manager.h"
 #include "weather_api.h"
 #include "wifi_manager.h"
