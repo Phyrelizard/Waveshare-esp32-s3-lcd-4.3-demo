@@ -6,6 +6,12 @@ A fully-featured smart display for the Waveshare ESP32-S3-Touch-LCD-4.3, featuri
 ![LVGL](https://img.shields.io/badge/LVGL-v8.3.8-green)
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange)
 
+## 🚀 Quick Start
+
+**New to this project? Start here:** [QUICKSTART.md](QUICKSTART.md) - Get up and running in 5 minutes!
+
+**Need detailed configuration help?** See [CONFIGURATION.md](CONFIGURATION.md) for timezone examples, troubleshooting, and advanced settings.
+
 ## ✨ Features
 
 ### 🌐 WiFi Connectivity
@@ -71,7 +77,14 @@ A fully-featured smart display for the Waveshare ESP32-S3-Touch-LCD-4.3, featuri
   - ESP32_Display_Panel (included in lib/)
   - ESP32_IO_Expander (included in lib/)
 
-## 🚀 Quick Start
+## 📖 Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute setup guide for beginners 🚀
+- **[CONFIGURATION.md](CONFIGURATION.md)** - Detailed configuration guide with timezone examples ⚙️
+- **[IMPLEMENTATION.md](IMPLEMENTATION.md)** - Complete technical documentation 📚
+- **config.h.example** - Example configuration with extensive comments
+
+## 🔧 Basic Setup
 
 ### 1. Clone and Open Project
 ```bash
@@ -91,16 +104,11 @@ Edit `include/config.h` with your information:
 // Your location (for weather)
 #define DEFAULT_LATITUDE "37.7749"    // San Francisco example
 #define DEFAULT_LONGITUDE "-122.4194"
-
-// Backlight schedule (24-hour format)
-#define DEFAULT_BACKLIGHT_ON_HOUR 7   // 7:00 AM
-#define DEFAULT_BACKLIGHT_OFF_HOUR 22 // 10:00 PM
-
-// Temperature units
-#define TEMP_UNIT_FAHRENHEIT true  // false for Celsius
 ```
 
 **📍 Find your coordinates:** https://www.latlong.net/
+
+See [QUICKSTART.md](QUICKSTART.md) for detailed step-by-step instructions!
 
 ### 3. Build and Upload
 
@@ -126,6 +134,8 @@ pio run --target upload
 pio device monitor
 # Baud rate: 115200
 ```
+
+For complete step-by-step instructions with screenshots, see **[QUICKSTART.md](QUICKSTART.md)**
 
 ## 📖 Configuration
 
