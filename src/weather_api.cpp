@@ -134,6 +134,9 @@ void WeatherAPI::parseForecast(JsonDocument& doc) {
     
     int count = min((int)dates.size(), 7);
     
+    // Day of week names
+    const char* dayNames[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    
     for (int i = 0; i < count; i++) {
         _forecasts[i].date = dates[i].as<String>();
         _forecasts[i].tempMax = tempMax[i] | 0.0f;
@@ -142,8 +145,32 @@ void WeatherAPI::parseForecast(JsonDocument& doc) {
         _forecasts[i].precipitationProb = precipProb[i] | 0;
         _forecasts[i].valid = true;
         
-        // Parse day of week from date (simple approach)
-        _forecasts[i].dayOfWeek = _forecasts[i].date.substring(5, 10); // MM-DD
+        // Parse date and calculate day of week
+        // Date format: YYYY-MM-DD
+        String dateStr = _forecasts[i].date;
+        if (dateStr.length() >= 10) {
+            int year = dateStr.substring(0, 4).toInt();
+            int month = dateStr.substring(5, 7).toInt();
+            int day = dateStr.substring(8, 10).toInt();
+            
+            // Zeller's congruence algorithm to calculate day of week
+            if (month < 3) {
+                month += 12;
+                year--;
+            }
+            int q = day;
+            int m = month;
+            int k = year % 100;
+            int j = year / 100;
+            int h = (q + ((13 * (m + 1)) / 5) + k + (k / 4) + (j / 4) - (2 * j)) % 7;
+            
+            // Convert result (0=Saturday, 1=Sunday, ..., 6=Friday) to our format (0=Sunday)
+            int dayIndex = (h + 6) % 7;
+            _forecasts[i].dayOfWeek = String(dayNames[dayIndex]);
+        } else {
+            // Fallback to showing MM-DD if date parsing fails
+            _forecasts[i].dayOfWeek = dateStr.substring(5, 10);
+        }
     }
     
     Serial.print("Parsed ");

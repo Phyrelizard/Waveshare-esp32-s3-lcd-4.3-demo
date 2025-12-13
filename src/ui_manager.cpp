@@ -123,7 +123,8 @@ void UIManager::updateMainUI(TimeManager& timeManager, WeatherAPI& weatherApi, W
         if (_forecastLabels[i]) {
             DailyForecast forecast = weatherApi.getForecast(i);
             if (forecast.valid) {
-                String forecastStr = forecast.dayOfWeek.substring(5, 10) + "\n";
+                // Display day of week abbreviation and temperatures
+                String forecastStr = forecast.dayOfWeek + "\n";
                 forecastStr += String((int)forecast.tempMax) + "°\n";
                 forecastStr += String((int)forecast.tempMin) + "°";
                 lv_label_set_text(_forecastLabels[i], forecastStr.c_str());
