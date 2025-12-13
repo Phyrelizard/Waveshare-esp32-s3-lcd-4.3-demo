@@ -1,37 +1,26 @@
 #include <Arduino.h>
 
 /**
- * The example demonstrates how to port LVGL.
- *
- * ## How to Use
- *
- * To use this example, please firstly install `ESP32_Display_Panel` (including its dependent libraries) and
- * `lvgl` (v8.3.x) libraries, then follow the steps to configure them:
- *
- * 1. [Configure ESP32_Display_Panel](https://github.com/esp-arduino-libs/ESP32_Display_Panel#configure-esp32_display_panel)
- * 2. [Configure LVGL](https://github.com/esp-arduino-libs/ESP32_Display_Panel#configure-lvgl)
- * 3. [Configure Board](https://github.com/esp-arduino-libs/ESP32_Display_Panel#configure-board)
- *
- * ## Example Output
- *
- * ```bash
- * ...
- * Hello LVGL! V8.3.8
- * I am ESP32_Display_Panel
- * Starting LVGL task
- * Setup done
- * Loop
- * Loop
- * Loop
- * Loop
- * ...
- * ```
+ * Smart Display for Waveshare ESP32-S3-Touch-LCD-4.3
+ * 
+ * Features:
+ * - WiFi connectivity with auto-reconnect
+ * - NTP time synchronization with timezone support (PST default)
+ * - Weather forecast using Open-Meteo API
+ * - Programmable backlight control with scheduling
+ * - Touch-to-wake functionality
+ * - Professional LVGL UI with clock, weather, and forecast
  */
 
 #include <lvgl.h>
 #include <ESP_Panel_Library.h>
 #include <ESP_IOExpander_Library.h>
-#include <ui.h>
+#include "config.h"
+#include "wifi_manager.h"
+#include "time_manager.h"
+#include "weather_api.h"
+#include "backlight_controller.h"
+#include "ui_manager.h"
 
 // Extend IO Pin define
 #define TP_RST 1
@@ -61,7 +50,20 @@
 #define LVGL_BUF_SIZE           (ESP_PANEL_LCD_H_RES * 20)
 
 ESP_Panel *panel = NULL;
+ESP_IOExpander *expander = NULL;
 SemaphoreHandle_t lvgl_mux = NULL;                  // LVGL mutex
+
+// Smart display modules
+WiFiManager wifiManager;
+TimeManager timeManager;
+WeatherAPI weatherApi;
+BacklightController *backlightController = NULL;
+UIManager uiManager;
+
+// Update intervals
+unsigned long lastUIUpdate = 0;
+unsigned long lastWeatherUpdate = 0;
+const unsigned long UI_UPDATE_INTERVAL = 1000;  // Update UI every second
 
 #if ESP_PANEL_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_RGB
 /* Display flushing */
@@ -103,6 +105,11 @@ void lvgl_port_tp_read(lv_indev_drv_t * indev, lv_indev_data_t * data)
         data->point.y = point.y;
 
         Serial.printf("Touch point: x %d, y %d\n", point.x, point.y);
+        
+        // Notify backlight controller of touch event
+        if (backlightController) {
+            backlightController->onTouch();
+        }
     }
 }
 #endif
@@ -195,14 +202,13 @@ void setup()
     Serial.println("Initialize IO expander");
     /* Initialize IO expander */
     // ESP_IOExpander *expander = new ESP_IOExpander_CH422G(I2C_MASTER_NUM, ESP_IO_EXPANDER_I2C_CH422G_ADDRESS_000, I2C_MASTER_SCL_IO, I2C_MASTER_SDA_IO);
-    ESP_IOExpander *expander = new ESP_IOExpander_CH422G(I2C_MASTER_NUM, ESP_IO_EXPANDER_I2C_CH422G_ADDRESS_000);
+    expander = new ESP_IOExpander_CH422G(I2C_MASTER_NUM, ESP_IO_EXPANDER_I2C_CH422G_ADDRESS_000);
     expander->init();
     expander->begin();
     expander->multiPinMode(TP_RST | LCD_BL | LCD_RST | SD_CS | USB_SEL, OUTPUT);
     expander->multiDigitalWrite(TP_RST | LCD_BL | LCD_RST | SD_CS, HIGH);
 
-    // Turn off backlight
-    // expander->digitalWrite(USB_SEL, LOW);
+    // Turn off USB_SEL
     expander->digitalWrite(USB_SEL, LOW);
     /* Add into panel */
     panel->addIOExpander(expander);
@@ -217,17 +223,84 @@ void setup()
     /* Lock the mutex due to the LVGL APIs are not thread-safe */
     lvgl_port_lock(-1);
 
+    // Initialize smart display UI
+    Serial.println("\n=== Initializing Smart Display ===");
     
-    ui_init();
-
+    // Create smart display UI instead of the demo UI
+    lv_obj_t* mainContainer = lv_scr_act();
+    uiManager.begin(mainContainer);
+    
     /* Release the mutex */
     lvgl_port_unlock();
 
+    // Initialize WiFi
+    Serial.println("\n=== Connecting to WiFi ===");
+    wifiManager.begin(WIFI_SSID, WIFI_PASSWORD);
+    
+    // Wait for WiFi connection
+    int wifiAttempts = 0;
+    while (!wifiManager.isConnected() && wifiAttempts < 30) {
+        delay(500);
+        wifiManager.loop();
+        wifiAttempts++;
+    }
+    
+    if (wifiManager.isConnected()) {
+        Serial.println("WiFi connected successfully!");
+        
+        // Initialize time synchronization
+        Serial.println("\n=== Initializing Time Sync ===");
+        timeManager.begin(NTP_SERVER, GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC);
+        
+        // Initialize weather API
+        Serial.println("\n=== Initializing Weather API ===");
+        weatherApi.begin(DEFAULT_LATITUDE, DEFAULT_LONGITUDE, TEMP_UNIT_FAHRENHEIT);
+        
+        // Fetch initial weather data
+        weatherApi.update();
+    } else {
+        Serial.println("WiFi connection failed - will retry in loop");
+    }
+    
+    // Initialize backlight controller
+    Serial.println("\n=== Initializing Backlight Controller ===");
+    backlightController = new BacklightController(expander, LCD_BL);
+    backlightController->begin();
+
+    Serial.println("\n=== Smart Display Setup Complete ===");
     Serial.println("Setup done");
 }
 
 void loop()
 {
-    // Serial.println("Loop");
-    sleep(1);
+    unsigned long now = millis();
+    
+    // Update WiFi connection status
+    wifiManager.loop();
+    
+    // Update time
+    if (wifiManager.isConnected()) {
+        timeManager.update();
+        
+        // Update weather periodically
+        if (now - lastWeatherUpdate > WEATHER_UPDATE_INTERVAL || lastWeatherUpdate == 0) {
+            weatherApi.update();
+            lastWeatherUpdate = now;
+        }
+    }
+    
+    // Update backlight based on schedule
+    if (timeManager.isTimeValid() && backlightController) {
+        backlightController->loop(timeManager.getHour());
+    }
+    
+    // Update UI periodically
+    if (now - lastUIUpdate > UI_UPDATE_INTERVAL) {
+        lvgl_port_lock(-1);
+        uiManager.update(timeManager, weatherApi, wifiManager);
+        lvgl_port_unlock();
+        lastUIUpdate = now;
+    }
+    
+    delay(10);  // Small delay to prevent tight loop
 }
