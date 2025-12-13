@@ -1,0 +1,116 @@
+/**
+ * Example Configuration File for Smart Display
+ * 
+ * Copy this to include/config.h and customize for your setup
+ * 
+ * IMPORTANT: Do not commit your actual config.h with credentials!
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// =============================================================================
+// WiFi Configuration
+// =============================================================================
+// Replace with your actual WiFi credentials
+#define WIFI_SSID "YourWiFiSSID"           // Your WiFi network name
+#define WIFI_PASSWORD "YourWiFiPassword"   // Your WiFi password
+#define WIFI_RECONNECT_INTERVAL 30000      // Reconnect attempt interval (ms)
+
+// =============================================================================
+// NTP Time Configuration
+// =============================================================================
+#define NTP_SERVER "pool.ntp.org"          // NTP server address
+#define NTP_UPDATE_INTERVAL 3600000        // Time resync interval (1 hour)
+
+// Timezone: Pacific Standard Time (PST) - Default
+// GMT Offset: UTC-8 hours = -28800 seconds
+// DST Offset: +1 hour = 3600 seconds
+#define DEFAULT_TIMEZONE "PST8PDT,M3.2.0,M11.1.0"  // POSIX timezone string
+#define GMT_OFFSET_SEC -28800               // Base UTC offset in seconds
+#define DAYLIGHT_OFFSET_SEC 3600            // Daylight saving offset in seconds
+
+// Common Timezone Examples (uncomment and adjust as needed):
+// 
+// US Eastern Time (EST/EDT):
+// #define DEFAULT_TIMEZONE "EST5EDT,M3.2.0,M11.1.0"
+// #define GMT_OFFSET_SEC -18000
+//
+// US Central Time (CST/CDT):
+// #define DEFAULT_TIMEZONE "CST6CDT,M3.2.0,M11.1.0"
+// #define GMT_OFFSET_SEC -21600
+//
+// US Mountain Time (MST/MDT):
+// #define DEFAULT_TIMEZONE "MST7MDT,M3.2.0,M11.1.0"
+// #define GMT_OFFSET_SEC -25200
+//
+// UK (GMT/BST):
+// #define DEFAULT_TIMEZONE "GMT0BST,M3.5.0/1,M10.5.0"
+// #define GMT_OFFSET_SEC 0
+//
+// Central Europe (CET/CEST):
+// #define DEFAULT_TIMEZONE "CET-1CEST,M3.5.0,M10.5.0/3"
+// #define GMT_OFFSET_SEC 3600
+//
+// Japan (JST - no DST):
+// #define DEFAULT_TIMEZONE "JST-9"
+// #define GMT_OFFSET_SEC 32400
+// #define DAYLIGHT_OFFSET_SEC 0
+//
+// Australia Eastern (AEST/AEDT):
+// #define DEFAULT_TIMEZONE "AEST-10AEDT,M10.1.0,M4.1.0/3"
+// #define GMT_OFFSET_SEC 36000
+
+// =============================================================================
+// Weather Configuration (Open-Meteo API)
+// =============================================================================
+#define WEATHER_UPDATE_INTERVAL 1800000    // Update every 30 minutes
+#define WEATHER_API_URL "https://api.open-meteo.com/v1/forecast"
+
+// Location coordinates (decimal degrees)
+// Find your coordinates at: https://www.latlong.net/
+// Example locations:
+// San Francisco, CA: 37.7749, -122.4194
+// New York, NY: 40.7128, -74.0060
+// London, UK: 51.5074, -0.1278
+// Tokyo, Japan: 35.6762, 139.6503
+// Sydney, Australia: -33.8688, 151.2093
+
+#define DEFAULT_LATITUDE "37.7749"         // Your latitude
+#define DEFAULT_LONGITUDE "-122.4194"      // Your longitude
+
+// =============================================================================
+// Backlight Schedule Configuration
+// =============================================================================
+// Times in 24-hour format (0-23)
+#define DEFAULT_BACKLIGHT_ON_HOUR 7        // Turn on at 7:00 AM
+#define DEFAULT_BACKLIGHT_OFF_HOUR 22      // Turn off at 10:00 PM
+#define BACKLIGHT_FADE_DURATION 500        // Fade animation duration (ms)
+#define TOUCH_WAKE_TIMEOUT 30000           // Auto-dim timeout (30 seconds)
+
+// =============================================================================
+// Display Preferences
+// =============================================================================
+#define TEMP_UNIT_FAHRENHEIT true          // true = °F, false = °C
+#define TIME_FORMAT_24H false              // true = 24-hour, false = 12-hour
+
+// =============================================================================
+// System Configuration
+// =============================================================================
+#define PREFS_NAMESPACE "smartdisplay"     // NVS namespace for settings
+
+// =============================================================================
+// Advanced Settings (usually don't need to change)
+// =============================================================================
+// Update intervals
+#define UI_UPDATE_INTERVAL 1000            // UI refresh rate (1 second)
+#define WIFI_CHECK_INTERVAL 5000           // WiFi status check (5 seconds)
+
+// Network timeouts
+#define HTTP_TIMEOUT 10000                 // HTTP request timeout (10 seconds)
+#define WIFI_CONNECT_TIMEOUT 20000         // WiFi connection timeout (20 seconds)
+
+// Display brightness (if supported)
+// #define BACKLIGHT_BRIGHTNESS 255        // 0-255 (full brightness)
+
+#endif // CONFIG_H
