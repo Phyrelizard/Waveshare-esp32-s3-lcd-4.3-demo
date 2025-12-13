@@ -132,6 +132,8 @@ curl -X POST -F "image=@vacation.jpg" http://esp32-display.local/api/upload-imag
 - **Recommended resolution:** 800×480 (native display resolution)
 - **Storage capacity:** 50+ images (depending on file sizes)
 
+**Current Limitation:** Images are stored successfully but displayed as color-coded placeholders. Full image display requires LVGL filesystem driver integration. See README.md "Known Limitations" section for implementation options.
+
 ### Starting the Slideshow
 
 Currently requires code modification to add a button handler:

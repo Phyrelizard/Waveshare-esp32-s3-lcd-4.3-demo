@@ -142,10 +142,8 @@ void WebServerManager::handleUploadImage(AsyncWebServerRequest* request, String 
         return;
     }
     
-    // Append data
-    for (size_t i = 0; i < len; i++) {
-        uploadBuffer.push_back(data[i]);
-    }
+    // Efficiently append data using insert
+    uploadBuffer.insert(uploadBuffer.end(), data, data + len);
     
     if (final) {
         Serial.printf("Upload finished: %d bytes\n", uploadBuffer.size());
@@ -240,8 +238,46 @@ void WebServerManager::handleDisplayNow(AsyncWebServerRequest* request) {
         return;
     }
     
-    // Implementation for immediate display
-    request->send(200, "application/json", "{\"status\":\"success\"}");
+    String type = "";
+    String content = "";
+    int duration = 10;
+    
+    if (request->hasParam("type", true)) {
+        type = request->getParam("type", true)->value();
+    }
+    if (request->hasParam("content", true)) {
+        content = request->getParam("content", true)->value();
+    }
+    if (request->hasParam("duration", true)) {
+        duration = request->getParam("duration", true)->value().toInt();
+    }
+    
+    if (type.length() == 0 || content.length() == 0) {
+        request->send(400, "application/json", "{\"error\":\"Missing type or content parameter\"}");
+        return;
+    }
+    
+    if (type == "message") {
+        // Send message with urgent priority to display immediately
+        messageHandler.addMessage(content, "", duration, PRIORITY_URGENT);
+        request->send(200, "application/json", "{\"status\":\"success\",\"type\":\"message\"}");
+    } else if (type == "image") {
+        // Check if image exists
+        if (!fsManager.imageExists(content)) {
+            request->send(404, "application/json", "{\"error\":\"Image not found\"}");
+            return;
+        }
+        
+        // Stop current slideshow and display this image
+        photoFrame.stop();
+        // TODO: Display single image - requires PhotoFrame enhancement
+        // For now, just add to slideshow and start it
+        photoFrame.start();
+        
+        request->send(200, "application/json", "{\"status\":\"success\",\"type\":\"image\"}");
+    } else {
+        request->send(400, "application/json", "{\"error\":\"Invalid type. Must be 'image' or 'message'\"}");
+    }
 }
 
 bool WebServerManager::checkAuth(AsyncWebServerRequest* request) {

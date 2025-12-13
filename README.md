@@ -303,6 +303,44 @@ To modify the UI:
 - **Upload buffer:** Dynamically allocated during uploads
 - **Message queue:** Limited to prevent memory overflow
 
+## Known Limitations
+
+### Image Display in Photo Frame
+
+The current implementation uses a placeholder for image display due to LVGL filesystem integration requirements. To enable full image display:
+
+1. **Option 1: Pre-converted Images**
+   - Convert images to C arrays using LVGL's image converter
+   - Include in firmware at compile time
+   - Limited by flash memory
+
+2. **Option 2: Custom LVGL Driver** (Recommended for production)
+   - Implement LVGL filesystem driver for LittleFS
+   - Add custom image decoder
+   - Example implementation:
+   ```cpp
+   // Register LittleFS with LVGL
+   lv_fs_drv_t drv;
+   lv_fs_drv_init(&drv);
+   drv.letter = 'F';
+   drv.open_cb = fs_open;
+   drv.close_cb = fs_close;
+   drv.read_cb = fs_read;
+   drv.seek_cb = fs_seek;
+   drv.tell_cb = fs_tell;
+   lv_fs_drv_register(&drv);
+   
+   // Then use in image:
+   lv_img_set_src(img, "F:/images/photo.jpg");
+   ```
+
+3. **Option 3: Load to RAM**
+   - Load entire image to RAM buffer
+   - Decode and display
+   - Limited by available heap
+
+For now, the photo frame shows color-coded placeholders based on filename. Images are properly stored and managed, but display requires one of the above implementations.
+
 ## Troubleshooting
 
 ### WiFi won't connect

@@ -119,9 +119,13 @@ void showPhotoFrameScreen() {
 }
 
 void hidePhotoFrameScreen() {
-    // Return to main screen - will need reference to ui_FirstScreen
+    // Return to main screen
+    // Note: Requires integration with existing UI system
+    // For now, just clear the screen
     lvgl_port_lock(-1);
-    // lv_scr_load(ui_FirstScreen);  // This will be added in main integration
+    if (photo_frame_screen != NULL) {
+        lv_obj_add_flag(photo_frame_screen, LV_OBJ_FLAG_HIDDEN);
+    }
     lvgl_port_unlock();
 }
 
@@ -130,13 +134,34 @@ void showPhotoFrameImage(const String& filename) {
     
     lvgl_port_lock(-1);
     
-    // Note: LVGL file system integration needed
-    // For now, just show a placeholder
-    lv_obj_set_style_bg_color(photo_frame_image, lv_color_hex(0x404040), 0);
+    // Build full path to image
+    String path = "/images/" + filename;
     
-    // TODO: Load actual image from LittleFS
-    // String path = "/images/" + filename;
-    // lv_img_set_src(photo_frame_image, path.c_str());
+    // Check if file exists
+    if (!LittleFS.exists(path.c_str())) {
+        Serial.printf("Image file not found: %s\n", path.c_str());
+        // Show placeholder
+        lv_obj_set_style_bg_color(photo_frame_image, lv_color_hex(0x404040), 0);
+        lv_obj_set_style_bg_opa(photo_frame_image, LV_OPA_COVER, 0);
+        lvgl_port_unlock();
+        return;
+    }
+    
+    // For LVGL 8.3, we need to use the file system driver
+    // This is a simplified implementation - full implementation would need
+    // custom image decoder or pre-loaded image descriptor
+    
+    // For now, show a colored background based on filename hash (placeholder)
+    // TODO: Implement full LVGL image decoder integration
+    uint32_t hash = 0;
+    for (size_t i = 0; i < filename.length(); i++) {
+        hash = hash * 31 + filename[i];
+    }
+    lv_color_t color = lv_color_hex(hash & 0xFFFFFF);
+    lv_obj_set_style_bg_color(photo_frame_image, color, 0);
+    lv_obj_set_style_bg_opa(photo_frame_image, LV_OPA_COVER, 0);
+    
+    Serial.printf("Displaying image: %s (placeholder mode)\n", filename.c_str());
     
     lvgl_port_unlock();
 }
