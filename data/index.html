@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Display Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+        
+        .section:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+        
+        h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+        
+        select {
+            padding: 12px;
+            margin: 5px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        #imageList {
+            margin-top: 15px;
+        }
+        
+        .image-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .image-info {
+            flex: 1;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ ESP32 Smart Display Control</h1>
+        
+        <div class="section">
+            <h2>📤 Upload Image</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" name="image" id="imageFile" accept="image/jpeg,image/png,image/bmp" required>
+                <div class="form-row">
+                    <button type="submit">Upload Image</button>
+                    <label>
+                        <input type="checkbox" name="show_now" id="showNow">
+                        Display immediately
+                    </label>
+                </div>
+            </form>
+            <div id="uploadStatus"></div>
+        </div>
+        
+        <div class="section">
+            <h2>💬 Send Message</h2>
+            <form id="messageForm">
+                <input type="text" name="title" placeholder="Title (optional)" style="width:100%; padding:12px; margin:10px 0; border:2px solid #e0e0e0; border-radius:8px;">
+                <textarea name="message" rows="4" placeholder="Enter your message..." required></textarea>
+                <div class="form-row">
+                    <label>Priority:</label>
+                    <select name="priority">
+                        <option value="0">Normal</option>
+                        <option value="1">Important</option>
+                        <option value="2">Urgent</option>
+                    </select>
+                    <label>Duration:</label>
+                    <select name="duration">
+                        <option value="5">5 seconds</option>
+                        <option value="10">10 seconds</option>
+                        <option value="30">30 seconds</option>
+                        <option value="60">1 minute</option>
+                        <option value="-1">Until dismissed</option>
+                    </select>
+                    <button type="submit">Send Message</button>
+                </div>
+            </form>
+            <div id="messageStatus"></div>
+        </div>
+        
+        <div class="section">
+            <h2>🖼️ Current Images</h2>
+            <button onclick="loadImages()">🔄 Refresh List</button>
+            <div id="imageList">
+                <div class="loading" id="imageLoading">
+                    <div class="spinner"></div>
+                    <p>Loading images...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📊 System Status</h2>
+            <button onclick="loadStatus()">🔄 Refresh Status</button>
+            <div id="statusInfo" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Upload Image
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('imageFile');
+            const showNow = document.getElementById('showNow').checked;
+            
+            formData.append('image', fileInput.files[0]);
+            if (showNow) {
+                formData.append('show_now', 'true');
+            }
+            
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.innerHTML = '<div class="status info">Uploading...</div>';
+            
+            try {
+                const response = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="status success">✓ Image uploaded successfully: ${result.filename}</div>`;
+                    fileInput.value = '';
+                    setTimeout(() => loadImages(), 1000);
+                } else {
+                    statusDiv.innerHTML = `<div class="status error">✗ Error: ${result.error || 'Upload failed'}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Error: ${error.message}</div>`;
+            }
+        });
+        
+        // Send Message
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            const statusDiv = document.getElementById('messageStatus');
+            statusDiv.innerHTML = '<div class="status info">Sending message...</div>';
+            
+            try {
+                const response = await fetch('/api/send-message', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="status success">✓ Message sent successfully (ID: ${result.message_id})</div>`;
+                    e.target.reset();
+                } else {
+                    statusDiv.innerHTML = `<div class="status error">✗ Error: ${result.error || 'Send failed'}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Error: ${error.message}</div>`;
+            }
+        });
+        
+        // Load Images
+        async function loadImages() {
+            const listDiv = document.getElementById('imageList');
+            const loadingDiv = document.getElementById('imageLoading');
+            
+            loadingDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/images');
+                const images = await response.json();
+                
+                loadingDiv.style.display = 'none';
+                
+                if (images.length === 0) {
+                    listDiv.innerHTML = '<div class="status info">No images uploaded yet.</div>';
+                    return;
+                }
+                
+                let html = '<div style="margin-top:15px;">';
+                images.forEach(img => {
+                    const sizeKB = (img.size / 1024).toFixed(1);
+                    const date = new Date(img.uploaded * 1000).toLocaleString();
+                    html += `
+                        <div class="image-item">
+                            <div class="image-info">
+                                <strong>${img.filename}</strong><br>
+                                <small>Size: ${sizeKB} KB | Uploaded: ${date}</small>
+                            </div>
+                            <button class="delete-btn" onclick="deleteImage('${img.filename}')">Delete</button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                listDiv.innerHTML = html;
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                listDiv.innerHTML = `<div class="status error">✗ Error loading images: ${error.message}</div>`;
+            }
+        }
+        
+        // Delete Image
+        async function deleteImage(filename) {
+            if (!confirm(`Delete ${filename}?`)) return;
+            
+            try {
+                const response = await fetch(`/api/images/${filename}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadImages();
+                } else {
+                    alert('Failed to delete image');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // Load Status
+        async function loadStatus() {
+            const statusDiv = document.getElementById('statusInfo');
+            statusDiv.innerHTML = '<div class="status info">Loading...</div>';
+            
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                const freeSpaceMB = (status.free_space / 1024 / 1024).toFixed(2);
+                const totalSpaceMB = (status.total_space / 1024 / 1024).toFixed(2);
+                const usedPercent = ((1 - status.free_space / status.total_space) * 100).toFixed(1);
+                
+                statusDiv.innerHTML = `
+                    <div class="status success">
+                        <strong>Storage:</strong> ${freeSpaceMB} MB free / ${totalSpaceMB} MB total (${usedPercent}% used)<br>
+                        <strong>Images:</strong> ${status.image_count}<br>
+                        <strong>Slideshow:</strong> ${status.slideshow_active ? 'Active' : 'Inactive'}<br>
+                        <strong>WiFi Signal:</strong> ${status.wifi_rssi} dBm
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">✗ Error loading status: ${error.message}</div>`;
+            }
+        }
+        
+        // Load images on page load
+        window.addEventListener('load', () => {
+            loadImages();
+            loadStatus();
+        });
+    </script>
+</body>
+</html>
