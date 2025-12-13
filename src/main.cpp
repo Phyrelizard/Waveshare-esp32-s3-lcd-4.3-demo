@@ -32,6 +32,12 @@
 #include <ESP_Panel_Library.h>
 #include <ESP_IOExpander_Library.h>
 #include <ui.h>
+#include <WiFi.h>
+#include "filesystem_manager.h"
+#include "night_mode.h"
+#include "photo_frame.h"
+#include "message_handler.h"
+#include "web_server.h"
 
 // Extend IO Pin define
 #define TP_RST 1
@@ -59,6 +65,11 @@
 #define LVGL_TASK_STACK_SIZE    (4 * 1024)
 #define LVGL_TASK_PRIORITY      (2)
 #define LVGL_BUF_SIZE           (ESP_PANEL_LCD_H_RES * 20)
+
+// WiFi configuration (optional - for web server feature)
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
+#define ENABLE_WIFI false  // Set to true to enable WiFi and web server
 
 ESP_Panel *panel = NULL;
 SemaphoreHandle_t lvgl_mux = NULL;                  // LVGL mutex
@@ -148,6 +159,31 @@ void setup()
     Serial.println(LVGL_Arduino);
     Serial.println("I am ESP32_Display_Panel");
 
+    // Initialize filesystem
+    Serial.println("Initializing filesystem...");
+    if (!fsManager.begin()) {
+        Serial.println("Filesystem initialization failed!");
+    }
+
+    // Initialize WiFi if enabled
+    if (ENABLE_WIFI && strlen(WIFI_SSID) > 0) {
+        Serial.println("Connecting to WiFi...");
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+        int attempts = 0;
+        while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+            delay(500);
+            Serial.print(".");
+            attempts++;
+        }
+        if (WiFi.status() == WL_CONNECTED) {
+            Serial.println("\nWiFi connected!");
+            Serial.print("IP address: ");
+            Serial.println(WiFi.localIP());
+        } else {
+            Serial.println("\nWiFi connection failed");
+        }
+    }
+
     panel = new ESP_Panel();
 
     /* Initialize LVGL core */
@@ -223,11 +259,55 @@ void setup()
     /* Release the mutex */
     lvgl_port_unlock();
 
+    // Initialize new features
+    Serial.println("Initializing features...");
+    
+    // Initialize night mode
+    nightMode.begin();
+    Serial.println("Night mode initialized");
+    
+    // Initialize photo frame
+    photoFrame.begin();
+    Serial.println("Photo frame initialized");
+    
+    // Initialize message handler
+    messageHandler.begin();
+    Serial.println("Message handler initialized");
+    
+    // Initialize web server if WiFi is connected
+    if (ENABLE_WIFI && WiFi.status() == WL_CONNECTED) {
+        webServer.begin("esp32-display");
+        Serial.println("Web server initialized");
+    }
+
     Serial.println("Setup done");
 }
 
 void loop()
 {
-    // Serial.println("Loop");
-    sleep(1);
+    static unsigned long lastNightModeCheck = 0;
+    static unsigned long lastPhotoFrameUpdate = 0;
+    static unsigned long lastMessageUpdate = 0;
+    
+    unsigned long currentTime = millis();
+    
+    // Update night mode (check every 60 seconds)
+    if (currentTime - lastNightModeCheck >= 60000) {
+        nightMode.update();
+        lastNightModeCheck = currentTime;
+    }
+    
+    // Update photo frame (check every 100ms)
+    if (currentTime - lastPhotoFrameUpdate >= 100) {
+        photoFrame.update();
+        lastPhotoFrameUpdate = currentTime;
+    }
+    
+    // Update message handler (check every 100ms)
+    if (currentTime - lastMessageUpdate >= 100) {
+        messageHandler.update();
+        lastMessageUpdate = currentTime;
+    }
+    
+    delay(10);
 }
