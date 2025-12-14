@@ -1,37 +1,45 @@
 #include <Arduino.h>
 
 /**
- * The example demonstrates how to port LVGL.
- *
- * ## How to Use
- *
- * To use this example, please firstly install `ESP32_Display_Panel` (including its dependent libraries) and
- * `lvgl` (v8.3.x) libraries, then follow the steps to configure them:
- *
- * 1. [Configure ESP32_Display_Panel](https://github.com/esp-arduino-libs/ESP32_Display_Panel#configure-esp32_display_panel)
- * 2. [Configure LVGL](https://github.com/esp-arduino-libs/ESP32_Display_Panel#configure-lvgl)
- * 3. [Configure Board](https://github.com/esp-arduino-libs/ESP32_Display_Panel#configure-board)
- *
- * ## Example Output
- *
- * ```bash
- * ...
- * Hello LVGL! V8.3.8
- * I am ESP32_Display_Panel
- * Starting LVGL task
- * Setup done
- * Loop
- * Loop
- * Loop
- * Loop
- * ...
- * ```
+ * WiFi Clock Display for Waveshare ESP32-S3 LCD 4.3"
+ * 
+ * Displays a centered digital clock with:
+ * - Black background
+ * - Cyan numbers in very large font
+ * - Yellow firmware version in lower left corner
+ * 
+ * Uses WiFi for NTP time synchronization.
  */
 
 #include <lvgl.h>
 #include <ESP_Panel_Library.h>
 #include <ESP_IOExpander_Library.h>
-#include <ui.h>
+#include <WiFi.h>
+#include <time.h>
+
+// Firmware version
+#define FIRMWARE_VERSION "v1.0.0"
+
+// WiFi credentials - IMPORTANT: Update these with your network details before uploading
+// For security, consider using WiFiManager library for captive portal setup in production
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// NTP server settings
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 0;        // Adjust for your timezone (seconds offset from GMT)
+const int daylightOffset_sec = 0;    // Daylight saving time offset
+
+// UI elements
+static lv_obj_t *clock_label = NULL;
+static lv_obj_t *version_label = NULL;
+
+// Time string buffer size for HH:MM:SS format
+#define TIME_STRING_BUFFER_SIZE 16
+
+// Last update timestamp for non-blocking loop
+static unsigned long lastUpdate = 0;
+const unsigned long UPDATE_INTERVAL_MS = 1000;
 
 // Extend IO Pin define
 #define TP_RST 1
@@ -138,6 +146,87 @@ void lvgl_port_task(void *arg)
     }
 }
 
+// Initialize WiFi connection
+void initWiFi() {
+    Serial.println("Connecting to WiFi...");
+    WiFi.begin(ssid, password);
+    
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi connected!");
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("\nWiFi connection failed!");
+    }
+}
+
+// Initialize NTP time synchronization
+void initTime() {
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    Serial.println("Waiting for NTP time sync...");
+    
+    struct tm timeinfo;
+    int attempts = 0;
+    while (!getLocalTime(&timeinfo) && attempts < 10) {
+        Serial.print(".");
+        delay(1000);
+        attempts++;
+    }
+    
+    if (getLocalTime(&timeinfo)) {
+        Serial.println("\nTime synchronized!");
+        Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+    } else {
+        Serial.println("\nFailed to obtain time");
+    }
+}
+
+// Create the clock UI
+void createClockUI() {
+    // Get the active screen
+    lv_obj_t *scr = lv_scr_act();
+    
+    // Set black background
+    lv_obj_set_style_bg_color(scr, lv_color_black(), LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, LV_PART_MAIN);
+    
+    // Create clock label - large cyan text centered
+    clock_label = lv_label_create(scr);
+    lv_obj_set_style_text_font(clock_label, &lv_font_montserrat_48, LV_PART_MAIN);
+    lv_obj_set_style_text_color(clock_label, lv_color_hex(0x00FFFF), LV_PART_MAIN);  // Cyan color
+    lv_label_set_text(clock_label, "00:00:00");
+    lv_obj_align(clock_label, LV_ALIGN_CENTER, 0, 0);
+    
+    // Create firmware version label - small yellow text in lower left
+    version_label = lv_label_create(scr);
+    lv_obj_set_style_text_font(version_label, &lv_font_montserrat_14, LV_PART_MAIN);
+    lv_obj_set_style_text_color(version_label, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow color
+    lv_label_set_text(version_label, FIRMWARE_VERSION);
+    lv_obj_align(version_label, LV_ALIGN_BOTTOM_LEFT, 10, -10);
+}
+
+// Update clock display with current time
+void updateClock() {
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+        char timeStr[TIME_STRING_BUFFER_SIZE];
+        strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
+        
+        lvgl_port_lock(-1);
+        if (clock_label != NULL) {
+            lv_label_set_text(clock_label, timeStr);
+        }
+        lvgl_port_unlock();
+    }
+}
+
 void setup()
 {
     Serial.begin(115200); /* prepare for possible serial debug */
@@ -146,7 +235,7 @@ void setup()
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
     Serial.println(LVGL_Arduino);
-    Serial.println("I am ESP32_Display_Panel");
+    Serial.println("WiFi Clock for Waveshare ESP32-S3 LCD 4.3\"");
 
     panel = new ESP_Panel();
 
@@ -217,17 +306,25 @@ void setup()
     /* Lock the mutex due to the LVGL APIs are not thread-safe */
     lvgl_port_lock(-1);
 
-    
-    ui_init();
+    // Create the clock UI
+    createClockUI();
 
     /* Release the mutex */
     lvgl_port_unlock();
+
+    // Initialize WiFi and NTP
+    initWiFi();
+    initTime();
 
     Serial.println("Setup done");
 }
 
 void loop()
 {
-    // Serial.println("Loop");
-    sleep(1);
+    // Non-blocking clock update - check if update interval has elapsed
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastUpdate >= UPDATE_INTERVAL_MS) {
+        lastUpdate = currentMillis;
+        updateClock();
+    }
 }
