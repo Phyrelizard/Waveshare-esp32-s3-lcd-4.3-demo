@@ -20,7 +20,8 @@
 // Firmware version
 #define FIRMWARE_VERSION "v1.0.0"
 
-// WiFi credentials - replace with your network details
+// WiFi credentials - IMPORTANT: Update these with your network details before uploading
+// For security, consider using WiFiManager library for captive portal setup in production
 const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
@@ -32,6 +33,13 @@ const int daylightOffset_sec = 0;    // Daylight saving time offset
 // UI elements
 static lv_obj_t *clock_label = NULL;
 static lv_obj_t *version_label = NULL;
+
+// Time string buffer size for HH:MM:SS format
+#define TIME_STRING_BUFFER_SIZE 16
+
+// Last update timestamp for non-blocking loop
+static unsigned long lastUpdate = 0;
+const unsigned long UPDATE_INTERVAL_MS = 1000;
 
 // Extend IO Pin define
 #define TP_RST 1
@@ -198,7 +206,7 @@ void createClockUI() {
     
     // Create firmware version label - small yellow text in lower left
     version_label = lv_label_create(scr);
-    lv_obj_set_style_text_font(version_label, &lv_font_montserrat_14, LV_PART_MAIN);  // Font size 14 (font 2 is typically a smaller size)
+    lv_obj_set_style_text_font(version_label, &lv_font_montserrat_14, LV_PART_MAIN);
     lv_obj_set_style_text_color(version_label, lv_color_hex(0xFFFF00), LV_PART_MAIN);  // Yellow color
     lv_label_set_text(version_label, FIRMWARE_VERSION);
     lv_obj_align(version_label, LV_ALIGN_BOTTOM_LEFT, 10, -10);
@@ -208,7 +216,7 @@ void createClockUI() {
 void updateClock() {
     struct tm timeinfo;
     if (getLocalTime(&timeinfo)) {
-        char timeStr[16];
+        char timeStr[TIME_STRING_BUFFER_SIZE];
         strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
         
         lvgl_port_lock(-1);
@@ -313,7 +321,10 @@ void setup()
 
 void loop()
 {
-    // Update the clock display every second
-    updateClock();
-    delay(1000);
+    // Non-blocking clock update - check if update interval has elapsed
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastUpdate >= UPDATE_INTERVAL_MS) {
+        lastUpdate = currentMillis;
+        updateClock();
+    }
 }
