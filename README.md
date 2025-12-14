@@ -1,29 +1,41 @@
-# Waveshare ESP32-S3-Touch-LCD-4.3 with Squareline Studio and PlatformIO
+# Waveshare ESP32-S3-Touch-LCD-4.3 WiFi Clock
 
-This is a first test with getting a Waveshare ESP32-S3-LCD-4.3 Touch running with an exported template project from SquareLine Studio.
+This project displays a digital clock on the Waveshare ESP32-S3-LCD-4.3 Touch display, synchronized via WiFi using NTP (Network Time Protocol).
 
-It is a very simple two-screen UI with buttons going back and forth.
+## Features
+
+- **WiFi Connectivity**: Connects to your WiFi network for time synchronization
+- **NTP Time Sync**: Automatically synchronizes time from internet time servers
+- **Clean Display**: 
+  - Black background
+  - Large cyan clock digits centered on screen
+  - Yellow firmware version in lower left corner
 
 ## Get Started
 
 1. Open the project in PlatformIO
-2. Connect your board to USB
-3. Make sure to press and hold the Boot button on your board, then press the Reset button, and release the Boot button
-4. Click Upload
-5. Enjoy clicking back and forth on your touch panel :)
+2. Edit `src/main.cpp` and update the WiFi credentials:
+   ```cpp
+   const char* ssid = "YOUR_WIFI_SSID";
+   const char* password = "YOUR_WIFI_PASSWORD";
+   ```
+3. Optionally adjust the timezone settings:
+   ```cpp
+   const long gmtOffset_sec = 0;        // Adjust for your timezone (seconds offset from GMT)
+   const int daylightOffset_sec = 0;    // Daylight saving time offset
+   ```
+4. Connect your board to USB
+5. Make sure to press and hold the Boot button on your board, then press the Reset button, and release the Boot button
+6. Click Upload
+7. The clock will display after WiFi connection and time synchronization
 
 ## Libraries
 
 The libraries are the ones provided on the [Waveshare Wiki](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-4.3): [S3-4.3-libraries.zip](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-4.3/S3-4.3-libraries.zip), except for lvgl, which is added as library dependency in `platformio.ini`.
 
-I tried to add the other two libraries as dependencies as well, but Waveshare made some changes:
-
-- ESP32_IO_Expander: The CH422G chip was added. There are [forks](https://github.com/esp-arduino-libs/ESP32_IO_Expander/network) from the original ESP32 repo including the new files, but nothing official yet.
-- ESP32_Display_Panel: There are also some changes in the repo, that I did not yet investigate.
-
-## SquareLine Studio
-
-The setting that worked the best for me in SquareLine Studio was Arduino with TFT_eSPI. I used Export > Create Template Project, but only copied the `lib/ui` folder into this project.
+Additional built-in Arduino ESP32 libraries used:
+- WiFi.h - WiFi connectivity
+- time.h - Time functions and NTP
 
 ## PlatformIO
 
@@ -49,12 +61,10 @@ lib_deps =
 
 These are the equivalents for settings the [Waveshare Wiki](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-4.3) recommends for the Arduino IDE.
 
-## Source
-
-The `src/main.cpp` is basically a combination of the `ESP32-S3-Touch-LCD-4.3_Code/Arduino/lvgl_Porting` example from the Waveshare wiki, with removed demo and `#include <ui.h>` from the exported SquareLine Studio project.
-
 ## Caveats
 
-There are some yellow artifacts when doing animations. Also, I have not yet figured out how to rotate the screen.
+- Make sure your WiFi credentials are correct
+- The device needs internet access to sync time via NTP
+- Time display format is 24-hour (HH:MM:SS)
 
 Feedback welcome!
